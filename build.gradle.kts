@@ -51,7 +51,7 @@ val downloadAndUnzipHeaders by tasks.creating {
 
 configurations.all {
     resolutionStrategy.dependencySubstitution {
-        substitute(module("org.jetbrains.kotlinx:kotlinx-coroutines-core-native:$coroutinesVersion")).with(module("org.jetbrains.kotlinx:kotlinx-coroutines-core-native:$coroutinesVersion-native-mt"))
+        substitute(module("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")).with(module("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion-native-mt"))
     }
 }
 
@@ -62,7 +62,7 @@ kotlin {
             common {
                 addCInterop()
                 dependencies {
-                    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-native:$coroutinesVersion")
+                    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
                     implementation("com.epam.drill.logger:logger:$drillLoggerVersion")
                     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:$immutableVersion")
                 }
