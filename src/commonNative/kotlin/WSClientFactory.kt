@@ -32,7 +32,6 @@ import kotlinx.coroutines.*
 
 data class ConnectionSettings(
     val url: URL,
-    val headers: Map<String, String>,
     val rxBufferSize: Int = 0,
     val txBufferSize: Int = 0
 )
@@ -42,6 +41,7 @@ private val logger = Logging.logger("Transport")
 
 const val BUFF_SIZE_MAX_VALUE = 1024 * 100000
 
+private val headersCallback = AtomicReference({ emptyMap<String, String>() }.freeze()).freeze()
 
 @ThreadLocal
 private var readFrame = byteArrayOf()
@@ -70,6 +70,12 @@ private val onOpenCallbacks = mutableSetOf<() -> Unit>()
 @ThreadLocal
 private var mainJob: Future<Unit>? = null
 
+var headers: () -> Map<String, String>
+    get() = headersCallback.value
+    set(value) {
+        headersCallback.value = value.freeze()
+    }
+
 @SharedImmutable
 val messages = atomic(persistentHashMapOf<Int, PersistentList<FrameOutputStream>>().freeze()).freeze()
 
@@ -91,7 +97,7 @@ private val connectionWatcher =
             }
             LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER -> {
                 memScoped {
-                    connectionSettings.headers.forEach { (key, value) ->
+                    headers().forEach { (key, value) ->
                         addHeader(
                             wsi, input, len, "$key:".cstr.getPointer(this).reinterpret(),
                             value.cstr.getPointer(this).reinterpret(), value.length
@@ -266,7 +272,6 @@ object WSClientFactory {
 
     fun createClient(
         url: URL,
-        headers: Map<String, String> = emptyMap(),
         rxBufferSize: Int = BUFF_SIZE_MAX_VALUE,
         txBufferSize: Int = BUFF_SIZE_MAX_VALUE
     ): WSClient {
@@ -275,8 +280,11 @@ object WSClientFactory {
             messages.update { it.put(Worker.current.id, persistentListOf()) }
             memScoped {
                 sul = alloc()
-                val set =
-                    ConnectionSettings(url, headers, rxBufferSize = rxBufferSize, txBufferSize = txBufferSize)
+                val set = ConnectionSettings(
+                    url,
+                    rxBufferSize = rxBufferSize,
+                    txBufferSize = txBufferSize
+                )
                 connectionSettings = set.freeze()
 
                 val alloc = cValue<lws_protocols> {
