@@ -107,15 +107,15 @@ private val connectionWatcher =
                 }
 
             }
-            LWS_CALLBACK_CLIENT_CONNECTION_ERROR, LWS_CALLBACK_CLOSED, LWS_CALLBACK_CLIENT_CLOSED -> {
+            LWS_CALLBACK_CLIENT_CONNECTION_ERROR, LWS_CALLBACK_CLOSED, LWS_CALLBACK_CLIENT_CLOSED, LWS_CALLBACK_WSI_DESTROY -> {
 
-                when {
-                    LWS_CALLBACK_CLIENT_CONNECTION_ERROR == reason -> {
+                when (reason) {
+                    LWS_CALLBACK_CLIENT_CONNECTION_ERROR -> {
                         onErrorCallbacks.forEach {
                             it()
                         }
                     }
-                    LWS_CALLBACK_CLIENT_CLOSED == reason -> {
+                    LWS_CALLBACK_CLIENT_CLOSED -> {
                         onCloseCallbacks.forEach {
                             it()
                         }
@@ -123,7 +123,7 @@ private val connectionWatcher =
                 }
 
                 client.update { it.remove(wrkId) }
-
+                //reconnect ws
                 lws_sul_schedule(
                     context,
                     0,
@@ -131,10 +131,6 @@ private val connectionWatcher =
                     clientConnect,
                     3 * LWS_USEC_PER_SEC
                 )
-            }
-
-            LWS_CALLBACK_WSI_DESTROY -> {
-                client.update { it.remove(wrkId) }
             }
 
             LWS_CALLBACK_CLIENT_RECEIVE -> {
@@ -146,8 +142,9 @@ private val connectionWatcher =
 
             LWS_CALLBACK_CLIENT_RECEIVE_PONG -> {
             }
-
             else -> {
+                //todo add trace log
+                //logger.trace { "non handling reason $reason" }
             }
         }
 

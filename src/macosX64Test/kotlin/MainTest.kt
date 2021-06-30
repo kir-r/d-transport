@@ -23,7 +23,7 @@ import kotlin.test.assertEquals
 
 class MainTest {
     private val iterations = 100
-    private val messageSize = 100000
+    private val messageSize = 100_000
 
     @Test
     fun tst() = runBlocking {
@@ -60,7 +60,7 @@ class MainTest {
         repeat(iterations) {
             client.send(message)
         }
-        delay(20000)
+        delay(20_000)
         assertEquals(iterations, atomic.value)
     }
 }
