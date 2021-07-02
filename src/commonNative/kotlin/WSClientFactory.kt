@@ -29,6 +29,7 @@ import kotlin.native.ThreadLocal
 import kotlin.native.concurrent.*
 import kotlinx.collections.immutable.plus
 import kotlinx.coroutines.*
+import lwsEventsDescription
 
 data class ConnectionSettings(
     val url: URL,
@@ -62,7 +63,7 @@ private var onBinariesCallbacks = mutableSetOf<(ByteArray) -> Unit>()
 private val onCloseCallbacks = mutableSetOf<() -> Unit>()
 
 @ThreadLocal
-private val onErrorCallbacks = mutableSetOf<() -> Unit>()
+private val onErrorCallbacks = mutableSetOf<(String) -> Unit>()
 
 @ThreadLocal
 private val onOpenCallbacks = mutableSetOf<() -> Unit>()
@@ -105,14 +106,18 @@ private val connectionWatcher =
                     }
 
                 }
-
             }
             LWS_CALLBACK_CLIENT_CONNECTION_ERROR, LWS_CALLBACK_CLOSED, LWS_CALLBACK_CLIENT_CLOSED, LWS_CALLBACK_WSI_DESTROY -> {
 
                 when (reason) {
                     LWS_CALLBACK_CLIENT_CONNECTION_ERROR -> {
                         onErrorCallbacks.forEach {
-                            it()
+                            val errorString = ByteArray(len.convert()).apply {
+                                usePinned {
+                                    memcpy(it.addressOf(0), input, len.convert())
+                                }
+                            }.decodeToString()
+                            it(errorString)
                         }
                     }
                     LWS_CALLBACK_CLIENT_CLOSED -> {
@@ -139,12 +144,8 @@ private val connectionWatcher =
             LWS_CALLBACK_CLIENT_WRITEABLE -> {
                 wsi?.let { writeLocal(wsi) }
             }
-
-            LWS_CALLBACK_CLIENT_RECEIVE_PONG -> {
-            }
             else -> {
-                //todo add trace log
-                //logger.trace { "non handling reason $reason" }
+                lwsEventsDescription[reason]?.let { logger.trace { "Event description: $it" } }
             }
         }
 
@@ -325,7 +326,7 @@ class WSClient : CoroutineScope {
         }
     }
 
-    fun onError(block: () -> Unit) {
+    fun onError(block: (String) -> Unit) {
         wrk.execute(TransferMode.UNSAFE, { block.freeze() }) {
             onErrorCallbacks += it
         }
