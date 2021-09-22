@@ -29,7 +29,7 @@ class MainTest {
     fun tst() = runBlocking {
         val atomic = atomic(0)
         val isOpened = atomic(false)
-        val message = ByteArray(messageSize) { 'c'.toByte() }
+        val message = ByteArray(messageSize) { 'c'.code.toByte() }
     //TODO ws://echo.websocket.org/echo is not available EPMDJ-8604
         val client = WSClientFactory.createClient(
             URL("ws://echo.websocket.org/echo"),

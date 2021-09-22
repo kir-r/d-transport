@@ -2,8 +2,7 @@ import java.net.*
 
 plugins {
     kotlin("multiplatform")
-    id("com.epam.drill.cross-compilation")
-    id("de.undercouch.download") version "4.1.1"
+    id("de.undercouch.download")
     id("com.github.hierynomus.license")
     `maven-publish`
 }
@@ -61,33 +60,40 @@ configurations.all {
 kotlin {
 
     targets {
-        crossCompilation {
-            common {
-                addCInterop()
-                dependencies {
-                    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
-                    implementation("com.epam.drill.logger:logger:$drillLoggerVersion")
-                    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:$immutableVersion")
-                }
-            }
-            posix {
-
-            }
-        }
         setOf(
             mingwX64(),
             macosX64(),
-            linuxX64()
+            linuxX64(),
         ).forEach {
             it.compilations["main"].addCInterop()
         }
     }
     sourceSets {
         all {
-            languageSettings.useExperimentalAnnotation("kotlin.ExperimentalUnsignedTypes")
-            languageSettings.useExperimentalAnnotation("kotlin.time.ExperimentalTime")
-            languageSettings.useExperimentalAnnotation("kotlin.ExperimentalStdlibApi")
-            languageSettings.useExperimentalAnnotation("kotlinx.coroutines.ExperimentalCoroutinesApi")
+            languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
+            languageSettings.optIn("kotlin.time.ExperimentalTime")
+            languageSettings.optIn("kotlin.ExperimentalStdlibApi")
+            languageSettings.optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
+        }
+
+        val commonMain by getting {
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+                implementation("com.epam.drill.logger:logger:$drillLoggerVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:$immutableVersion")
+            }
+        }
+        val commonNative by creating {
+            dependsOn(commonMain)
+        }
+        val mingwX64Main by getting {
+            dependsOn(commonNative)
+        }
+        val linuxX64Main by getting {
+            dependsOn(commonNative)
+        }
+        val macosX64Main by getting {
+            dependsOn(commonNative)
         }
 
     }
