@@ -18,18 +18,19 @@ import com.epam.drill.transport.common.ws.URL
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.test.*
 
 class MainTest {
     private val iterations = 100
     private val messageSize = 100_000
 
     @Test
+    @Ignore
     fun tst() = runBlocking {
         val atomic = atomic(0)
         val isOpened = atomic(false)
         val message = ByteArray(messageSize) { 'c'.toByte() }
+        //TODO ws://echo.websocket.org/echo is not available EPMDJ-8604
         val client = WSClientFactory.createClient(
             URL("ws://echo.websocket.org/echo"),
             txBufferSize = messageSize,

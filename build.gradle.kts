@@ -21,8 +21,8 @@ apply(from = "$scriptUrl/git-version.gradle.kts")
 
 repositories {
     mavenLocal()
+    mavenCentral()
     apply(from = "$scriptUrl/maven-repo.gradle.kts")
-    jcenter()
 }
 
 val prepareStaticLib by tasks.creating(de.undercouch.gradle.tasks.download.Download::class) {
